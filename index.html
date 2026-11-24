@@ -34,7 +34,7 @@
 </section>
 <section class="dashboard-block">
   <div class="section-title"><h2>4. Konsequenz für dein Investment</h2><span>Modellbasierte Orientierung, keine Kursprognose</span></div>
-  <article class="signal investment-card" id="investmentCard"><div class="name">Handlungsableitung</div><div class="value" id="investmentValue">Noch keine Daten</div><div class="detail" id="investmentDetail">Nach dem Datenabruf folgt eine nachvollziehbare Einordnung von Sparplan, Zusatzkauf und Abwarten.</div><div id="investmentScenarios" class="scenario-list"></div></article>
+  <article class="signal investment-card" id="investmentCard"><div class="name">Handlungsableitung</div><div class="value" id="investmentValue">Noch keine Daten</div><div class="detail" id="investmentDetail">Nach dem Datenabruf folgt eine nachvollziehbare Einordnung von Sparplan, Zusatzkauf und Abwarten.</div><div id="investmentScenarios" class="scenario-list"></div><div class="chart-card" id="historicalSimilarity" style="margin-top:14px"><h3>Historische Ähnlichkeitssuche</h3><p class="muted">Wird nach dem Datenabruf berechnet.</p></div></article>
 </section>
 </section>
 <div class="warning">Das Modell wertet historische On-Chain-Daten aus. Es ist keine Anlageberatung und keine Kursprognose. Eine Signaländerung kann verzögert eintreten; vergangene Muster müssen sich nicht wiederholen.</div>
@@ -353,6 +353,48 @@ export function correlationMatrix(data, analysis, fromDate = null) {
 
 // ---------- Backtest ----------
 
+// Vergleich der aktuellen 3-Perspektiven-Situation mit früheren Wochen.
+// Es werden nur Vergleichswochen verwendet, deren 365-Tage-Fenster vollständig in der Vergangenheit liegt.
+export function findSimilarHistoricalPeriods(data, analysis, limit = 20) {
+  const groups = ['bewertung', 'phase', 'timing'];
+  if (groups.some(g => analysis.current[g].gray)) return { status: 'invalid', matches: [], horizons: {} };
+  const currentWeeks = groups.map(g => analysis.weekly[g]);
+  const latest = currentWeeks[0].at(-1);
+  if (!latest || currentWeeks.some(ws => !ws.length || ws.at(-1).date !== latest.date)) return { status: 'invalid', matches: [], horizons: {} };
+  const target = currentWeeks.map(ws => ws.at(-1).score);
+  if (target.some(v => !isNum(v))) return { status: 'invalid', matches: [], horizons: {} };
+  const cutoff = latest.endIdx - 365;
+  const candidates = [];
+  for (let i = 0; i < currentWeeks[0].length; i++) {
+    const rows = currentWeeks.map(ws => ws[i]);
+    if (rows.some(w => !w || !isNum(w.score) || w.endIdx > cutoff)) continue;
+    const outcome = forwardStats(data.series.price, rows[0].endIdx, 365);
+    if (!outcome) continue;
+    const delta = rows.map((w,j) => w.score - target[j]);
+    const distance = Math.sqrt(delta.reduce((sum,v)=>sum+v*v,0) / 3);
+    candidates.push({ date: rows[0].date, endIdx: rows[0].endIdx, distance, outcome });
+  }
+  candidates.sort((a,b)=>a.distance-b.distance);
+  // Nicht dutzende fast identische Nachbarwochen aus derselben Marktphase auswählen.
+  const selected=[];
+  for (const c of candidates) {
+    if (selected.every(x => Math.abs(x.endIdx-c.endIdx) >= 28)) selected.push(c);
+    if (selected.length >= limit) break;
+  }
+  if (selected.length < 10) return { status: 'insufficient', matches: selected, available: candidates.length, horizons: {} };
+  const horizons={};
+  for (const h of [90,180,365]) {
+    const rows=selected.map(c=>forwardStats(data.series.price,c.endIdx,h)).filter(Boolean);
+    horizons[h]=summarize(rows);
+  }
+  return {
+    status:'ok', matches:selected, available:candidates.length, horizons,
+    firstDate:selected.reduce((a,x)=>x.date<a?x.date:a,selected[0].date),
+    lastDate:selected.reduce((a,x)=>x.date>a?x.date:a,selected[0].date),
+    meanDistance:selected.reduce((a,x)=>a+x.distance,0)/selected.length
+  };
+}
+
 function forwardStats(price, i, h) {
   const j = i + h;
   if (j >= price.length || !isNum(price[i]) || !isNum(price[j])) return null;
@@ -514,6 +556,18 @@ function renderDashboard(){
  $('investmentValue').textContent=action;$('investmentDetail').textContent=reason;
  $('investmentScenarios').innerHTML='<div class="scenario"><b>100 € Sparplan</b><span class="muted">Regelmäßig fortführen, sofern es zu deinem Budget und Risikorahmen passt.</span></div><div class="scenario"><b>1.000 € zusätzlich</b><span class="muted">'+(valid&&favorable>=2?'Gestaffelt prüfbar; nicht als Pflichtkauf.':'Derzeit kein klares Modellargument für einen sofortigen Zusatzkauf.')+'</span></div><div class="scenario"><b>2.000 € zusätzlich</b><span class="muted">'+(valid&&favorable>=2?'Nur in mehreren Tranchen und mit ausreichender Liquiditätsreserve erwägen.':'Eher zurückstellen, bis mehrere Perspektiven klarer sind.')+'</span></div>';
 }
+function renderHistoricalSimilarity(){
+ const fmtDate=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('de-DE'):'—';
+ const el=$('historicalSimilarity');if(!el||!DATA||!ANALYSIS)return;
+ const r=findSimilarHistoricalPeriods(DATA,ANALYSIS,20);
+ if(r.status==='invalid'){el.innerHTML='<h3>Historische Ähnlichkeitssuche</h3><p class="muted">Nicht verfügbar: Mindestens eine aktuelle Perspektive ist unvollständig oder veraltet. Es wird keine historische Kaufableitung angezeigt.</p>';return;}
+ if(r.status==='insufficient'){el.innerHTML='<h3>Historische Ähnlichkeitssuche</h3><p class="muted">Noch zu wenige ausreichend ähnliche Vergleichswochen mit vollständig beobachtbarer 365-Tage-Entwicklung (mindestens 10 erforderlich). Verfügbare Kandidaten: '+r.available+'.</p>';return;}
+ const rows=[90,180,365].map(h=>{const x=r.horizons[h];return '<tr><td>'+h+' Tage</td><td>'+x.n+'</td><td>'+pct(x.median)+'</td><td>'+pct(x.hit)+'</td><td>'+pct(x.medianMaxLoss)+'</td></tr>';}).join('');
+ const x=r.horizons[365];
+ let reading=x.median>0&&x.hit>=0.6?'Die ähnlichsten historischen Wochen entwickelten sich überwiegend positiv. Das ist ein unterstützender Hinweis, aber kein eigenständiges Kaufsignal.':x.median<0||x.hit<0.45?'Die ähnlichsten historischen Wochen lieferten kein überzeugend positives Bild. Das spricht gegen einen unüberlegten großen Zusatzkauf.':'Die historischen Vergleichsfälle liefern ein gemischtes Bild. Ein Zusatzkauf lässt sich daraus allein nicht begründen.';
+ el.innerHTML='<h3>Historische Ähnlichkeitssuche</h3><p class="muted">Die '+r.matches.length+' ähnlichsten Wochen anhand der drei Perspektiven · Vergleichszeitraum '+fmtDate(r.firstDate)+' bis '+fmtDate(r.lastDate)+'. Nur Wochen mit vollständig bekannten Folgezeiträumen; je mindestens 4 Wochen Abstand.</p><div class="table-wrap"><table><thead><tr><th>Zeitraum</th><th>Fälle</th><th>Median-Rendite</th><th>Positiv</th><th>Medianer Rückgang</th></tr></thead><tbody>'+rows+'</tbody></table></div><p>'+reading+'</p><p class="muted">Wichtig: Die Fälle können sich in ihren 90-/180-/365-Tage-Fenstern weiterhin überschneiden und sind daher keine unabhängigen Marktzyklen. Die Trefferquote ist keine Prognosewahrscheinlichkeit. Der Vergleich nutzt die drei Perspektiven-Scores, nicht sämtliche Rohindikatoren einzeln.</p>';
+ const inv=$('investmentDetail');if(inv)inv.textContent+=' Historischer Vergleich: '+r.matches.length+' ähnliche Wochen; 365-Tage-Median '+pct(x.median)+', positive Fälle '+pct(x.hit)+', medianer zwischenzeitlicher Rückgang '+pct(x.medianMaxLoss)+'. Diese überlappenden Beobachtungen ergänzen die Ampel, ersetzen aber keine Risikoprüfung.';
+}
 function renderSignals(){const groups=['bewertung','phase','timing'];$('signals').innerHTML=groups.map(g=>{const c=ANALYSIS.current[g];const s=c.gray?null:c.stable;return `<article class="signal"><div class="name"><span class="dot ${s||''}"></span>${g==='bewertung'?'Bewertung':g==='phase'?'Marktphase':'Timing'}</div><div class="value">${stateName(g,s)}</div><div class="detail">${c.gray?c.reasons.join(' '):`Bestätigt bis ${c.weekEnd} · Wochenwert ${formatNum(c.weekScore)}`}</div></article>`}).join('');$('asOf').textContent=`Datenstand ${ANALYSIS.lastDate} · ${ANALYSIS.staleDays} Tage alt`}
 function aggregateWeekly(dates,values){const buckets=new Map();for(let i=0;i<dates.length;i++){const t=Date.parse(dates[i]+'T00:00:00Z');if(!Number.isFinite(t))continue;const day=(new Date(t).getUTCDay()+6)%7;const monday=t-day*DAY;const key=new Date(monday).toISOString().slice(0,10);if(!buckets.has(key))buckets.set(key,{date:dates[i],sum:0,count:0});const b=buckets.get(key);b.date=dates[i];if(isNum(values[i])){b.sum+=values[i];b.count++;}}const rows=[...buckets.values()];return {dates:rows.map(x=>x.date),values:rows.map(x=>x.count?x.sum/x.count:null)}}
 function plot(el,dates,values,color,label,range='') {const node=$(el);if(!node||node.clientWidth<80)return;const start=range?sliceRange(dates,range):0;let plotDates=dates.slice(start),plotValues=values.slice(start);if(range==='4y'){const weekly=aggregateWeekly(plotDates,plotValues);plotDates=weekly.dates;plotValues=weekly.values;}const xs=plotDates.map(d=>Date.parse(d+'T00:00:00Z')/1000);const ys=plotValues;if(!xs.length)return;const price=label==='BTC USD';const opts={width:Math.floor(node.clientWidth),height:Math.max(180,Math.floor(node.clientHeight||220)),scales:{x:{time:true}},axes:[{stroke:'#9aabc0',grid:{stroke:'#26364a'},ticks:{stroke:'#26364a'}},{stroke:'#9aabc0',grid:{stroke:'#26364a'},ticks:{stroke:'#26364a'},size:price?112:64,values:price?((u,v)=>v.map(x=>String.fromCharCode(36)+new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(x))):undefined}],series:[{}, {label,scale:'y',stroke:color,width:2,points:{show:false},spanGaps:false}],legend:{show:false},cursor:{drag:{x:true,y:false}},select:{show:false}};const c=new uPlot(opts,[xs,ys],node);charts.push(c)}
@@ -537,7 +591,7 @@ function renderCharts(){destroyCharts();renderSynthesisChart();const range=$('ra
 const specs=[['mvrvZ','MVRV Z-Score','mvrvZ'],['nupl','NUPL','nupl'],['puell','Puell Multiple','puell'],['sthMvrv','STH-MVRV','sthMvrv'],['lthSopr','LTH-SOPR','lthSopr'],['sthSopr','STH-SOPR','sthSopr'],['netflow','Exchange Netflow · BTC/Tag','netflow']];$('indicatorCharts').innerHTML=specs.map(([k,n])=>{const start=sliceRange(DATA.dates,range),rows=DATA.dates.slice(start).map((date,i)=>({date,value:ANALYSIS.inputs[k].basis[start+i]})).filter(x=>isNum(x.value));const first=rows[0]?.date,last=rows.at(-1)?.date;const fmtDate=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('de-DE'):'—';const meta=rows.length?('Datenabdeckung: '+fmtDate(first)+' bis '+fmtDate(last)+' · '+rows.length.toLocaleString('de-DE')+' Tageswerte'+(range==='4y'?' · im Diagramm zu Wochenwerten verdichtet':'')):'Keine gültigen Daten im gewählten Zeitraum';return `<article class="chart-card"><div class="chart-head"><h3>${n}</h3></div><p class="muted chart-coverage">${meta}</p><div id="ind-${k}" class="chart"></div></article>`}).join('');for(const [k,n] of specs)plot('ind-'+k,DATA.dates,ANALYSIS.inputs[k].basis,'#60a5fa',n,range)}
 function renderBacktest(){const g=$('backtestGroup').value;const bt=backtestSignals(DATA,ANALYSIS,g,'2013-01-01');const rows=[];for(const h of CONFIG.horizons)for(const s of ['low','mid','high']){const x=bt.horizons[h][s];rows.push(`<tr><td>${h} Tage</td><td>${stateName(g,s)}</td><td>${x.n}</td><td>${x.median==null?'—':pct(x.median)}</td><td>${x.hit==null?'—':pct(x.hit)}</td><td>${x.medianMaxLoss==null?'—':pct(x.medianMaxLoss)}</td></tr>`)}$('backtestTable').querySelector('tbody').innerHTML=rows.join('')}
 function renderDca(){if(dcaChart){dcaChart.destroy();dcaChart=null}const monthly=Math.max(1,Number($('monthly').value)||100),start=$('dcaStart').value||'2017-01-01';const r=backtestDca(DATA,ANALYSIS,start,monthly,'bewertung');const money=x=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(x);$('dcaResult').textContent=`Einzahlungen ${money(r.plain.deposited)} · Standard-Sparplan ${money(r.plain.value)} (${r.plain.multiple.toFixed(2)}×) · Ampel-Sparplan ${money(r.signal.value)} (${r.signal.multiple.toFixed(2)}×) · Cashreserve ${money(r.signal.cash)} · ausgelassene Monate ${r.skippedMonths} · Monate ohne Signal ${r.unknownMonths}.`;const el=$('chart-dca');el.innerHTML='';if(r.curve.t.length){const opts={width:el.clientWidth||600,height:230,scales:{x:{time:true}},axes:[{stroke:'#9aabc0',grid:{stroke:'#26364a'}},{stroke:'#9aabc0',grid:{stroke:'#26364a'}}],series:[{}, {label:'Standard',stroke:'#60a5fa',width:2},{label:'Ampel',stroke:'#35c995',width:2},{label:'Einzahlungen',stroke:'#f4a340',width:1,dash:[5,4]}],legend:{show:true}};dcaChart=new uPlot(opts,[r.curve.t,r.curve.plain,r.curve.sig,r.curve.deposited],el)}}
-function render(){renderDashboard();renderCharts();renderBacktest();renderDca()}
+function render(){renderDashboard();renderHistoricalSimilarity();renderCharts();renderBacktest();renderDca()}
 $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('change',()=>{if(DATA)renderCharts()});$('backtestGroup').addEventListener('change',()=>{if(DATA)renderBacktest()});$('dcaBtn').addEventListener('click',()=>{if(DATA)renderDca()});$('apiKey').value=localStorage.getItem('kote_chart_api_key')||'';window.addEventListener('resize',()=>{if(DATA){renderCharts();renderDca()}});$('deepAnalysis').addEventListener('toggle',()=>{if(DATA&&$('deepAnalysis').open)requestAnimationFrame(()=>renderCharts())});
 </script>
 

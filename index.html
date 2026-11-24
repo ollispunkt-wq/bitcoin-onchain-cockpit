@@ -19,6 +19,31 @@
 <div class="section-title"><h2>Indikatoren</h2><span>Glättung gemäß Modellbasis</span></div><div class="chart-grid" id="indicatorCharts"></div>
 <div class="section-title" id="backtest"><h2>Historischer Signal-Backtest</h2><span>Renditen ab bestätigtem Wochenschluss</span></div><section class="panel"><div class="field" style="max-width:260px"><label for="backtestGroup">Signalbereich</label><select id="backtestGroup"><option value="bewertung">Bewertung</option><option value="phase">Marktphase</option><option value="timing">Timing</option></select></div><div class="table-wrap"><table id="backtestTable"><thead><tr><th>Horizont</th><th>Signal</th><th>Wochen</th><th>Median Rendite</th><th>Trefferquote</th><th>Median Max. Verlust</th></tr></thead><tbody><tr><td colspan="6" class="muted">Nach dem Datenabruf verfügbar.</td></tr></tbody></table></div><p class="muted">Überlappende Vorwärtsfenster sind nicht unabhängig. Ergebnisse sind historische Beobachtungen, keine erwartbaren Renditen.</p></section>
 <div class="section-title"><h2>Sparplan-Vergleich</h2><span>Gleiche monatliche Einzahlung · keine Gebühren/Steuern</span></div><section class="panel"><div class="controls"><div class="field"><label for="monthly">Monatsrate in USD</label><input id="monthly" type="number" min="1" step="10" value="100"></div><div class="field"><label for="dcaStart">Startdatum</label><input id="dcaStart" type="date" value="2017-01-01"></div><div class="field"><button class="secondary" id="dcaBtn" disabled>Vergleich berechnen</button></div></div><div id="dcaResult" class="status">Wird nach dem Datenabruf berechnet.</div><div id="chart-dca" class="chart"></div></section>
+
+<div class="section-title" id="portfolio"><h2>Mein Bitcoin-Portfolio</h2><span>Nur echte, selbst erfasste Käufe · lokal gespeichert</span></div>
+<section class="panel" id="portfolioPanel">
+  <p class="muted">Trage jeden tatsächlichen Kauf einzeln ein. Benötigt werden der tatsächlich belastete Eurobetrag und die tatsächlich gutgeschriebene BTC-Menge. Es werden keine bisherigen Bestände oder Käufe geschätzt.</p>
+  <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0">
+    <div class="signal"><div class="name">Aktueller Portfoliowert</div><div class="value" id="pfValue">—</div><div class="detail" id="pfPriceMeta">Noch kein aktueller Kurs</div></div>
+    <div class="signal"><div class="name">Tatsächlich investiert</div><div class="value" id="pfInvested">—</div><div class="detail">Summe der eingetragenen Käufe</div></div>
+    <div class="signal"><div class="name">Gewinn / Verlust</div><div class="value" id="pfPnl">—</div><div class="detail" id="pfPnlPct">Erst nach Kursabruf und Käufen</div></div>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0">
+    <div class="signal"><div class="name">BTC-Bestand</div><div class="value" id="pfBtc">—</div></div>
+    <div class="signal"><div class="name">Durchschnittlicher Einstand</div><div class="value" id="pfAverage">—</div><div class="detail">EUR je BTC, aus den erfassten Käufen</div></div>
+    <div class="signal"><div class="name">Aktueller BTC/EUR-Kurs</div><div class="value" id="pfSpot">—</div><div class="detail">Live-Kurs, keine historische Schätzung</div></div>
+  </div>
+  <div class="controls" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px">
+    <div class="field"><label for="pfDate">Kaufdatum</label><input type="date" id="pfDate"></div>
+    <div class="field"><label for="pfEuro">Tatsächlich belastet (EUR)</label><input type="number" id="pfEuro" min="0.01" step="0.01" placeholder="z. B. 100"></div>
+    <div class="field"><label for="pfBtcInput">Tatsächlich erhalten (BTC)</label><input type="number" id="pfBtcInput" min="0.00000001" step="0.00000001" placeholder="z. B. 0,00125"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="pfAdd">Kauf hinzufügen</button><button class="secondary" id="pfRefresh">BTC/EUR-Kurs aktualisieren</button><button class="secondary" id="pfExport">Käufe exportieren (JSON)</button><label class="secondary" style="display:inline-flex;align-items:center;padding:9px 12px;border:1px solid #34475e;border-radius:9px;cursor:pointer">Käufe importieren<input id="pfImport" type="file" accept="application/json,.json" style="display:none"></label></div>
+  <div id="pfStatus" class="status">Noch keine Käufe eingetragen. Die bisherigen ungefähren Positionsangaben werden bewusst nicht übernommen.</div>
+  <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Kaufdatum</th><th>EUR belastet</th><th>BTC erhalten</th><th>Einstand EUR/BTC</th><th></th></tr></thead><tbody id="pfRows"><tr><td colspan="5" class="muted">Noch keine Käufe erfasst.</td></tr></tbody></table></div>
+  <p class="muted">Die Einträge werden in diesem Browser gespeichert. Exportiere regelmäßig eine Sicherung. Bei fehlendem Live-Kurs bleiben Portfoliowert und Gewinn/Verlust leer – es wird kein alter Kurs fortgeschrieben.</p>
+</section>
+
 </main><footer>Datenquelle: Kote Charts · nicht-kommerzielle Nutzung mit Quellenangabe · <a href="https://kotecharts.com/methodology" target="_blank" rel="noopener">Methodik</a> · <a href="https://kotecharts.com/docs" target="_blank" rel="noopener">API-Dokumentation</a></footer>
 <script>
 /*! https://github.com/leeoniya/uPlot (v1.6.32) */
@@ -421,4 +446,88 @@ function renderBacktest(){const g=$('backtestGroup').value;const bt=backtestSign
 function renderDca(){if(dcaChart){dcaChart.destroy();dcaChart=null}const monthly=Math.max(1,Number($('monthly').value)||100),start=$('dcaStart').value||'2017-01-01';const r=backtestDca(DATA,ANALYSIS,start,monthly,'bewertung');const money=x=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(x);$('dcaResult').textContent=`Einzahlungen ${money(r.plain.deposited)} · Standard-Sparplan ${money(r.plain.value)} (${r.plain.multiple.toFixed(2)}×) · Ampel-Sparplan ${money(r.signal.value)} (${r.signal.multiple.toFixed(2)}×) · Cashreserve ${money(r.signal.cash)} · ausgelassene Monate ${r.skippedMonths} · Monate ohne Signal ${r.unknownMonths}.`;const el=$('chart-dca');el.innerHTML='';if(r.curve.t.length){const opts={width:el.clientWidth||600,height:230,scales:{x:{time:true}},axes:[{stroke:'#9aabc0',grid:{stroke:'#26364a'}},{stroke:'#9aabc0',grid:{stroke:'#26364a'}}],series:[{}, {label:'Standard',stroke:'#60a5fa',width:2},{label:'Ampel',stroke:'#35c995',width:2},{label:'Einzahlungen',stroke:'#f4a340',width:1,dash:[5,4]}],legend:{show:true}};dcaChart=new uPlot(opts,[r.curve.t,r.curve.plain,r.curve.sig,r.curve.deposited],el)}}
 function render(){renderSignals();renderCharts();renderBacktest();renderDca()}
 $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('change',()=>{if(DATA)renderCharts()});$('backtestGroup').addEventListener('change',()=>{if(DATA)renderBacktest()});$('dcaBtn').addEventListener('click',()=>{if(DATA)renderDca()});$('apiKey').value=localStorage.getItem('kote_chart_api_key')||'';window.addEventListener('resize',()=>{if(DATA){renderCharts();renderDca()}});
-</script></body></html>
+</script>
+
+<script>
+(() => {
+  const $p = id => document.getElementById(id);
+  const KEY = 'bitcoin_cockpit_real_buys_v1';
+  let buys = [];
+  let spot = null, spotTime = null;
+  const eur = n => new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n);
+  const btc = n => new Intl.NumberFormat('de-DE',{maximumFractionDigits:8}).format(n);
+  const num = n => new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
+  const status = (s, bad=false) => { $p('pfStatus').textContent=s; $p('pfStatus').className='status'+(bad?' error':''); };
+  function validBuy(x) { if(!x || typeof x.date!=='string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date))return false; const d=new Date(x.date+'T00:00:00Z'); return d.toISOString().slice(0,10)===x.date && Number.isFinite(x.eur) && x.eur>0 && Number.isFinite(x.btc) && x.btc>0; }
+  function save() { localStorage.setItem(KEY, JSON.stringify(buys)); }
+  function render() {
+    const totalEur = buys.reduce((s,x)=>s+x.eur,0);
+    const totalBtc = buys.reduce((s,x)=>s+x.btc,0);
+    const value = spot == null ? null : totalBtc * spot;
+    const pnl = value == null ? null : value-totalEur;
+    $p('pfInvested').textContent = buys.length ? eur(totalEur) : '—';
+    $p('pfBtc').textContent = buys.length ? btc(totalBtc)+' BTC' : '—';
+    $p('pfAverage').textContent = totalBtc>0 ? eur(totalEur/totalBtc) : '—';
+    $p('pfSpot').textContent = spot == null ? '—' : eur(spot);
+    $p('pfValue').textContent = value == null || !buys.length ? '—' : eur(value);
+    $p('pfPnl').textContent = pnl == null || !buys.length ? '—' : (pnl>0?'+':'')+eur(pnl);
+    $p('pfPnl').style.color = pnl == null ? '' : pnl>=0 ? 'var(--green)' : 'var(--red)';
+    $p('pfPnlPct').textContent = pnl == null || !totalEur ? 'Erst nach Kursabruf und Käufen' : (pnl>=0?'+':'')+num(pnl/totalEur*100)+' % gegenüber den erfassten Einzahlungen';
+    $p('pfPriceMeta').textContent = spotTime ? 'Kurszeit: '+spotTime.toLocaleString('de-DE') : 'Noch kein aktueller Kurs';
+    const rows = [...buys].sort((a,b)=>b.date.localeCompare(a.date));
+    $p('pfRows').innerHTML = rows.length ? rows.map(x=>'<tr><td>'+x.date+'</td><td>'+eur(x.eur)+'</td><td>'+btc(x.btc)+'</td><td>'+eur(x.eur/x.btc)+'</td><td><button class="secondary" data-del="'+x.id+'" style="padding:5px 8px;min-height:28px">Löschen</button></td></tr>').join('') : '<tr><td colspan="5" class="muted">Noch keine Käufe erfasst.</td></tr>';
+  }
+  async function refresh() {
+    status('Rufe aktuellen BTC/EUR-Spotkurs bei Kraken ab …');
+    try {
+      const response = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTEUR',{cache:'no-store'});
+      if (!response.ok) throw new Error('HTTP '+response.status);
+      const data = await response.json();
+      if (data.error && data.error.length) throw new Error(data.error.join(', '));
+      const ticker = Object.values(data.result || {})[0];
+      const price = Number(ticker?.c?.[0]);
+      if (!Number.isFinite(price) || price<=0) throw new Error('Kursdaten fehlen oder sind ungültig.');
+      spot = price; spotTime = new Date();
+      render();
+      status('Live-Kurs erfolgreich abgerufen. Quelle: Kraken BTC/EUR · '+spotTime.toLocaleString('de-DE'));
+    } catch(e) {
+      spot = null; spotTime = null; render();
+      status('Kein aktueller Kurs verfügbar: '+e.message+'. Portfoliowert und Gewinn/Verlust bleiben deshalb leer.', true);
+    }
+  }
+  $p('pfAdd').addEventListener('click',()=>{
+    const date=$p('pfDate').value, amount=Number($p('pfEuro').value), quantity=Number($p('pfBtcInput').value);
+    const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),date,eur:amount,btc:quantity};
+    if(!validBuy(item)){status('Bitte ein gültiges Kaufdatum, einen positiven Eurobetrag und die tatsächlich erhaltene BTC-Menge eintragen.',true);return;}
+    buys.push(item);save();render();
+    $p('pfEuro').value='';$p('pfBtcInput').value='';
+    status('Kauf gespeichert. Die Berechnung basiert ausschließlich auf den eingetragenen Transaktionen.');
+  });
+  $p('pfRows').addEventListener('click',e=>{
+    const btn=e.target.closest('[data-del]'); if(!btn)return;
+    if(!confirm('Diesen Kauf wirklich löschen?'))return;
+    buys=buys.filter(x=>x.id!==btn.dataset.del);save();render();status('Kauf gelöscht.');
+  });
+  $p('pfRefresh').addEventListener('click',refresh);
+  $p('pfExport').addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify({format:'bitcoin-cockpit-buys-v1',exportedAt:new Date().toISOString(),buys},null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='bitcoin-kaeufe.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+  $p('pfImport').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    try{
+      const data=JSON.parse(await file.text()), incoming=data?.buys;
+      if(!Array.isArray(incoming)||!incoming.every(validBuy))throw new Error('Datei enthält keine gültige Kaufhistorie.');
+      if(!confirm('Import ersetzt die bisher gespeicherte Kaufhistorie. Fortfahren?'))return;
+      buys=incoming.map(x=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,9),date:x.date,eur:Number(x.eur),btc:Number(x.btc)}));
+      save();render();status(buys.length+' Käufe importiert.');
+    }catch(err){status('Import fehlgeschlagen: '+err.message,true);}
+    finally{e.target.value='';}
+  });
+  try { const stored=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(stored))buys=stored.filter(validBuy); } catch {}
+  $p('pfDate').value=new Date().toISOString().slice(0,10);
+  render();
+  refresh();
+})();
+</script>
+</body></html>

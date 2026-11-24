@@ -518,6 +518,9 @@ $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('c
     buys=buys.filter(x=>x.id!==btn.dataset.del);save();render();status('Kauf gelöscht.');
   });
   $p('pfRefresh').addEventListener('click',refresh);
+  window.addEventListener('bitcoin-cockpit-portfolio-updated',()=>{
+    try { const stored=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(stored))buys=stored.filter(validBuy); render(); } catch {}
+  });
   $p('pfExport').addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify({format:'bitcoin-cockpit-buys-v1',exportedAt:new Date().toISOString(),buys},null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='bitcoin-kaeufe.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

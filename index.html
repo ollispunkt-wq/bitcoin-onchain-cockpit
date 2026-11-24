@@ -67,15 +67,30 @@
     <div class="signal"><div class="name">Durchschnittlicher Einstand</div><div class="value" id="pfAverage">—</div><div class="detail">EUR je BTC, aus den erfassten Käufen</div></div>
     <div class="signal"><div class="name">Aktueller BTC/EUR-Kurs</div><div class="value" id="pfSpot">—</div><div class="detail">Live-Kurs, keine historische Schätzung</div></div>
   </div>
-  <div class="controls" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px">
-    <div class="field"><label for="pfDate">Kaufdatum</label><input type="date" id="pfDate"></div>
-    <div class="field"><label for="pfEuro">Tatsächlich belastet (EUR)</label><input type="number" id="pfEuro" min="0.01" step="0.01" placeholder="z. B. 100"></div>
-    <div class="field"><label for="pfBtcInput">Tatsächlich erhalten (BTC)</label><input type="number" id="pfBtcInput" min="0.00000001" step="0.00000001" placeholder="z. B. 0,00125"></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin:12px 0">
+    <div class="signal"><div class="name">Aktueller Portfoliowert</div><div class="value" id="pfValue">—</div><div class="detail" id="pfPriceMeta">Noch kein aktueller Kurs</div></div>
+    <div class="signal"><div class="name">BTC-Bestand</div><div class="value" id="pfBtc">—</div><div class="detail">Nach Käufen und Verkäufen</div></div>
+    <div class="signal"><div class="name">Offener Einstand</div><div class="value" id="pfInvested">—</div><div class="detail">Durchschnittlicher Einstand der vorhandenen BTC</div></div>
+    <div class="signal"><div class="name">Unrealisierter Gewinn / Verlust</div><div class="value" id="pfUnrealized">—</div><div class="detail">Wert des Bestands minus Rest-Einstand</div></div>
+    <div class="signal"><div class="name">Realisierter Gewinn / Verlust</div><div class="value" id="pfRealized">—</div><div class="detail">Aus abgeschlossenen Verkäufen</div></div>
+    <div class="signal"><div class="name">Gesamtergebnis</div><div class="value" id="pfPnl">—</div><div class="detail" id="pfPnlPct">Kurs und Transaktionen erforderlich</div></div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="pfAdd">Kauf hinzufügen</button><button class="secondary" id="pfRefresh">BTC/EUR-Kurs aktualisieren</button><button class="secondary" id="pfExport">Käufe exportieren (JSON)</button><label class="secondary" style="display:inline-flex;align-items:center;padding:9px 12px;border:1px solid #34475e;border-radius:9px;cursor:pointer">Käufe importieren<input id="pfImport" type="file" accept="application/json,.json" style="display:none"></label></div>
-  <div id="pfStatus" class="status">Noch keine Käufe eingetragen. Die bisherigen ungefähren Positionsangaben werden bewusst nicht übernommen.</div>
-  <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Kaufdatum</th><th>EUR belastet</th><th>BTC erhalten</th><th>Einstand EUR/BTC</th><th></th></tr></thead><tbody id="pfRows"><tr><td colspan="5" class="muted">Noch keine Käufe erfasst.</td></tr></tbody></table></div>
-  <p class="muted">Die Einträge werden in diesem Browser gespeichert. Exportiere regelmäßig eine Sicherung. Bei fehlendem Live-Kurs bleiben Portfoliowert und Gewinn/Verlust leer – es wird kein alter Kurs fortgeschrieben.</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin:12px 0">
+    <div class="signal"><div class="name">Durchschnittlicher Einstand</div><div class="value" id="pfAverage">—</div><div class="detail">EUR je aktuell gehaltenem BTC</div></div>
+    <div class="signal"><div class="name">Aktueller BTC/EUR-Kurs</div><div class="value" id="pfSpot">—</div><div class="detail">Live-Kurs von Kraken</div></div>
+  </div>
+  <h3 style="margin:18px 0 8px">Transaktion manuell erfassen</h3>
+  <div class="controls" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px">
+    <div class="field"><label for="pfDate">Datum</label><input type="date" id="pfDate"></div>
+    <div class="field"><label for="pfType">Transaktion</label><select id="pfType"><option value="buy">Kauf</option><option value="sell">Verkauf</option></select></div>
+    <div class="field"><label for="pfSource">Herkunft</label><select id="pfSource"><option value="Trade Republic">Trade Republic</option><option value="BTC-Sparplan">BTC-Sparplan</option><option value="Manuell / Sonstige">Manuell / Sonstige</option></select></div>
+    <div class="field"><label for="pfEuro">Eurobetrag</label><input type="number" id="pfEuro" min="0.01" step="0.01" placeholder="z. B. 100"></div>
+    <div class="field"><label for="pfBtcInput">BTC-Menge</label><input type="number" id="pfBtcInput" min="0.00000001" step="0.00000001" placeholder="z. B. 0,00125"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="pfAdd">Transaktion speichern</button><button class="secondary" id="pfRefresh">BTC/EUR-Kurs aktualisieren</button><button class="secondary" id="pfExport">Transaktionen exportieren (JSON)</button><label class="secondary" style="display:inline-flex;align-items:center;padding:9px 12px;border:1px solid #34475e;border-radius:9px;cursor:pointer">JSON-Sicherung importieren<input id="pfImport" type="file" accept="application/json,.json" style="display:none"></label></div>
+  <div id="pfStatus" class="status">Noch keine Transaktionen erfasst. Frühere Bestände werden nicht geschätzt.</div>
+  <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Datum</th><th>Typ</th><th>Herkunft</th><th>EUR</th><th>BTC</th><th>EUR/BTC</th><th></th></tr></thead><tbody id="pfRows"><tr><td colspan="7" class="muted">Noch keine Transaktionen erfasst.</td></tr></tbody></table></div>
+  <p class="muted">Alle Einträge bleiben lokal in diesem Browser. Verkäufe werden mit dem durchschnittlichen Einstandskurs zum Verkaufszeitpunkt verrechnet (keine Steuer-FIFO-Berechnung). Exportiere regelmäßig eine JSON-Sicherung.</p>
 </section>
 
 </main><footer>Datenquelle: Kote Charts · nicht-kommerzielle Nutzung mit Quellenangabe · <a href="https://kotecharts.com/methodology" target="_blank" rel="noopener">Methodik</a> · <a href="https://kotecharts.com/docs" target="_blank" rel="noopener">API-Dokumentation</a></footer>
@@ -537,89 +552,24 @@ $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('c
 
 <script>
 (() => {
-  const $p = id => document.getElementById(id);
-  const KEY = 'bitcoin_cockpit_real_buys_v1';
-  let buys = [];
-  let spot = null, spotTime = null;
-  const eur = n => new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n);
-  const btc = n => new Intl.NumberFormat('de-DE',{maximumFractionDigits:8}).format(n);
-  const num = n => new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
-  const status = (s, bad=false) => { $p('pfStatus').textContent=s; $p('pfStatus').className='status'+(bad?' error':''); };
-  function validBuy(x) { if(!x || typeof x.date!=='string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date))return false; const d=new Date(x.date+'T00:00:00Z'); return d.toISOString().slice(0,10)===x.date && Number.isFinite(x.eur) && x.eur>0 && Number.isFinite(x.btc) && x.btc>0; }
-  function save() { localStorage.setItem(KEY, JSON.stringify(buys)); }
-  function render() {
-    const totalEur = buys.reduce((s,x)=>s+x.eur,0);
-    const totalBtc = buys.reduce((s,x)=>s+x.btc,0);
-    const value = spot == null ? null : totalBtc * spot;
-    const pnl = value == null ? null : value-totalEur;
-    $p('pfInvested').textContent = buys.length ? eur(totalEur) : '—';
-    $p('pfBtc').textContent = buys.length ? btc(totalBtc)+' BTC' : '—';
-    $p('pfAverage').textContent = totalBtc>0 ? eur(totalEur/totalBtc) : '—';
-    $p('pfSpot').textContent = spot == null ? '—' : eur(spot);
-    $p('pfValue').textContent = value == null || !buys.length ? '—' : eur(value);
-    $p('pfPnl').textContent = pnl == null || !buys.length ? '—' : (pnl>0?'+':'')+eur(pnl);
-    $p('pfPnl').style.color = pnl == null ? '' : pnl>=0 ? 'var(--green)' : 'var(--red)';
-    $p('pfPnlPct').textContent = pnl == null || !totalEur ? 'Erst nach Kursabruf und Käufen' : (pnl>=0?'+':'')+num(pnl/totalEur*100)+' % gegenüber den erfassten Einzahlungen';
-    $p('pfPriceMeta').textContent = spotTime ? 'Kurszeit: '+spotTime.toLocaleString('de-DE') : 'Noch kein aktueller Kurs';
-    const rows = [...buys].sort((a,b)=>b.date.localeCompare(a.date));
-    $p('pfRows').innerHTML = rows.length ? rows.map(x=>'<tr><td>'+x.date+'</td><td>'+eur(x.eur)+'</td><td>'+btc(x.btc)+'</td><td>'+eur(x.eur/x.btc)+'</td><td><button class="secondary" data-del="'+x.id+'" style="padding:5px 8px;min-height:28px">Löschen</button></td></tr>').join('') : '<tr><td colspan="5" class="muted">Noch keine Käufe erfasst.</td></tr>';
+  const el=id=>document.getElementById(id);
+  const fileInput=el('pfCsvFile'),mapBox=el('pfCsvMap'),preview=el('pfCsvPreview'),importBtn=el('pfCsvImport');
+  let rows=[],headers=[],staged=[];
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  function decodeCsv(buffer){const bytes=new Uint8Array(buffer);if(bytes.length>=2&&bytes[0]===0xff&&bytes[1]===0xfe)return new TextDecoder('utf-16le').decode(bytes.subarray(2));if(bytes.length>=2&&bytes[0]===0xfe&&bytes[1]===0xff)return new TextDecoder('utf-16be').decode(bytes.subarray(2));if(bytes.length>8){let even=0,odd=0;for(let i=0;i<Math.min(bytes.length,400);i++){if(bytes[i]===0)(i%2?odd++:even++);}if(odd>8&&even===0)return new TextDecoder('utf-16le').decode(bytes);if(even>8&&odd===0)return new TextDecoder('utf-16be').decode(bytes);}return new TextDecoder('utf-8').decode(bytes);}
+  function parseCsv(text){text=String(text||'').replace(/^\\uFEFF/,'').replace(/\\r\\n?/g,'\\n');const lines=text.split('\\n').filter(x=>x.trim());if(!lines.length)return [];const count=(line,d)=>{let q=false,n=0;for(let i=0;i<line.length;i++){if(line[i]==='"'){if(q&&line[i+1]==='"'){i++;continue;}q=!q;}else if(!q&&line[i]===d)n++;}return n;};const ds=[',',';','\\t'];const delim=ds.map(d=>({d,score:lines.slice(0,30).reduce((a,l)=>a+count(l,d),0)})).sort((a,b)=>b.score-a.score)[0].d;const out=[];let row=[],cell='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(q){if(c==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(c==='"')q=false;else cell+=c;}else if(c==='"')q=true;else if(c===delim){row.push(cell);cell='';}else if(c==='\\n'){row.push(cell);if(row.some(x=>x.trim()))out.push(row);row=[];cell='';}else cell+=c;}row.push(cell);if(row.some(x=>x.trim()))out.push(row);return out;}
+  function number(v){let s=String(v??'').trim().replace(/[^0-9,.-]/g,'');if(!s)return NaN;if(s.includes(',')&&s.includes('.')){if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\\./g,'').replace(',','.');else s=s.replace(/,/g,'');}else if(s.includes(','))s=s.replace(',','.');const n=Number(s);return Number.isFinite(n)?n:NaN;}
+  function options(id,label,aliases,required=true){const idx=headers.findIndex(h=>aliases.some(a=>norm(h)===norm(a)||norm(h).includes(norm(a))));return '<label class="field"><span class="muted">'+label+'</span><select id="'+id+'" style="width:100%">'+(required?(idx<0?'<option value="-1" selected disabled>Spalte auswählen</option>':''):'<option value="-1">Nicht zugeordnet</option>')+headers.map((h,i)=>'<option value="'+i+'" '+(i===idx?'selected':'')+'>'+h.replace(/</g,'&lt;')+'</option>').join('')+'</select></label>';}
+  function mapped(){const get=id=>Number(el(id).value);return {date:get('csvDate'),type:get('csvType'),asset:get('csvAsset'),btc:get('csvBtc'),eur:get('csvEur'),price:get('csvPrice')};}
+  function buildPreview(){
+    if(!rows.length)return;const m=mapped(),found=[],ignored={other:0,unknown:0};
+    for(const r of rows){const cell=i=>i>=0?String(r[i]??'').trim():'';const asset=cell(m.asset).toUpperCase();if(asset!=='BTC'&&asset!=='BITCOIN'){ignored.other++;continue;}const rawType=norm(cell(m.type));const type=/(^| )(buy|purchase|kauf|kaufen)( |$)/.test(rawType)?'buy':/(^| )(sell|sale|verkauf|verkaufen)( |$)/.test(rawType)?'sell':null;if(!type){ignored.unknown++;continue;}const timestamp=cell(m.date);const d=timestamp.match(/^\\d{4}-\\d{2}-\\d{2}T/)?timestamp.slice(0,10):timestamp.slice(0,10);const b=Math.abs(number(cell(m.btc))),e=Math.abs(number(cell(m.eur))),price=m.price>=0?Math.abs(number(cell(m.price))):null;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d)||!b||!e||!Number.isFinite(b)||!Number.isFinite(e))continue;found.push({date:d,timestamp:/^\\d{4}-\\d{2}-\\d{2}T/.test(timestamp)?timestamp:timestamp+'T12:00:00+01:00',type,source:'Bitpanda',eur:e,btc:b,assetPrice:Number.isFinite(price)?price:null});}
+    staged=found;const buys=found.filter(x=>x.type==='buy').length,sells=found.filter(x=>x.type==='sell').length;const sample=found.slice(0,6).map(x=>'<tr><td>'+x.date+'</td><td>'+(x.type==='buy'?'Kauf':'Verkauf')+'</td><td>'+x.eur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €</td><td>'+x.btc.toLocaleString('de-DE',{maximumFractionDigits:8})+'</td></tr>').join('');
+    preview.innerHTML=found.length?'<b>'+found.length+' BTC-Transaktionen erkannt: '+buys+' Käufe, '+sells+' Verkäufe.</b><div class="muted">Andere Assets ignoriert: '+ignored.other+' · Unklare Typen ignoriert: '+ignored.unknown+'. Vorschau:</div><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Typ</th><th>EUR</th><th>BTC</th></tr></thead><tbody>'+sample+'</tbody></table></div>':'Keine passenden BTC-Käufe oder -Verkäufe erkannt. Bitte Spaltenzuordnung prüfen.';importBtn.disabled=!found.length;
   }
-  async function refresh() {
-    status('Rufe aktuellen BTC/EUR-Spotkurs bei Kraken ab …');
-    try {
-      const response = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTEUR',{cache:'no-store'});
-      if (!response.ok) throw new Error('HTTP '+response.status);
-      const data = await response.json();
-      if (data.error && data.error.length) throw new Error(data.error.join(', '));
-      const ticker = Object.values(data.result || {})[0];
-      const price = Number(ticker?.c?.[0]);
-      if (!Number.isFinite(price) || price<=0) throw new Error('Kursdaten fehlen oder sind ungültig.');
-      spot = price; spotTime = new Date();
-      render();
-      status('Live-Kurs erfolgreich abgerufen. Quelle: Kraken BTC/EUR · '+spotTime.toLocaleString('de-DE'));
-    } catch(e) {
-      spot = null; spotTime = null; render();
-      status('Kein aktueller Kurs verfügbar: '+e.message+'. Portfoliowert und Gewinn/Verlust bleiben deshalb leer.', true);
-    }
-  }
-  $p('pfAdd').addEventListener('click',()=>{
-    const date=$p('pfDate').value, amount=Number($p('pfEuro').value), quantity=Number($p('pfBtcInput').value);
-    const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),date,eur:amount,btc:quantity};
-    if(!validBuy(item)){status('Bitte ein gültiges Kaufdatum, einen positiven Eurobetrag und die tatsächlich erhaltene BTC-Menge eintragen.',true);return;}
-    buys.push(item);save();render();
-    $p('pfEuro').value='';$p('pfBtcInput').value='';
-    status('Kauf gespeichert. Die Berechnung basiert ausschließlich auf den eingetragenen Transaktionen.');
-  });
-  $p('pfRows').addEventListener('click',e=>{
-    const btn=e.target.closest('[data-del]'); if(!btn)return;
-    if(!confirm('Diesen Kauf wirklich löschen?'))return;
-    buys=buys.filter(x=>x.id!==btn.dataset.del);save();render();status('Kauf gelöscht.');
-  });
-  $p('pfRefresh').addEventListener('click',refresh);
-  window.addEventListener('bitcoin-cockpit-portfolio-updated',()=>{
-    try { const stored=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(stored))buys=stored.filter(validBuy); render(); } catch {}
-  });
-  $p('pfExport').addEventListener('click',()=>{
-    const blob=new Blob([JSON.stringify({format:'bitcoin-cockpit-buys-v1',exportedAt:new Date().toISOString(),buys},null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='bitcoin-kaeufe.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  });
-  $p('pfImport').addEventListener('change',async e=>{
-    const file=e.target.files?.[0];if(!file)return;
-    try{
-      const data=JSON.parse(await file.text()), incoming=data?.buys;
-      if(!Array.isArray(incoming)||!incoming.every(validBuy))throw new Error('Datei enthält keine gültige Kaufhistorie.');
-      if(!confirm('Import ersetzt die bisher gespeicherte Kaufhistorie. Fortfahren?'))return;
-      buys=incoming.map(x=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,9),date:x.date,eur:Number(x.eur),btc:Number(x.btc)}));
-      save();render();status(buys.length+' Käufe importiert.');
-    }catch(err){status('Import fehlgeschlagen: '+err.message,true);}
-    finally{e.target.value='';}
-  });
-  try { const stored=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(stored))buys=stored.filter(validBuy); } catch {}
-  $p('pfDate').value=new Date().toISOString().slice(0,10);
-  render();
-  refresh();
-})();
-</script>
+  fileInput.addEventListener('change',async()=>{const file=fileInput.files?.[0];if(!file)return;try{const matrix=parseCsv(decodeCsv(await file.arrayBuffer()));if(matrix.length<2)throw new Error('Die Datei enthält nach der Dekodierung weniger als zwei Tabellenzeilen.');let headAt=matrix.findIndex(r=>r.some(x=>norm(x)==='timestamp')&&r.some(x=>norm(x)==='transaction type'));if(headAt<0)headAt=matrix.findIndex(r=>r.length>=3&&r.some(x=>/date|datum|timestamp|time/i.test(norm(x)))&&r.some(x=>/type|typ|asset|coin|amount|betrag|menge/i.test(norm(x))));if(headAt<0)headAt=matrix.reduce((best,r,i)=>r.length>matrix[best].length?i:best,0);headers=matrix[headAt].map((h,i)=>String(h||'Spalte '+(i+1)).trim());rows=matrix.slice(headAt+1).filter(r=>r.some(x=>String(x||'').trim()));mapBox.innerHTML=options('csvDate','Zeitstempel',['Timestamp','Date','Datum','Time'])+options('csvType','Transaktionstyp',['Transaction Type','Type'])+options('csvAsset','Asset',['Asset'])+options('csvBtc','BTC-Menge',['Amount Asset'])+options('csvEur','Eurobetrag',['Amount Fiat'])+options('csvPrice','Asset-Marktpreis (Kontrolle)',['Asset market Price'],false);mapBox.classList.remove('hidden');['csvDate','csvType','csvAsset','csvBtc','csvEur','csvPrice'].forEach(id=>el(id).addEventListener('change',buildPreview));buildPreview();}catch(err){rows=[];staged=[];mapBox.classList.add('hidden');preview.textContent='CSV konnte nicht gelesen werden: '+err.message;importBtn.disabled=true;}});
+  importBtn.addEventListener('click',()=>{if(!staged.length)return;const key='bitcoin_cockpit_real_buys_v1';const existing=JSON.parse(localStorage.getItem(key)||'[]');let added=0,duplicates=0;for(const x of staged){const duplicate=existing.some(y=>(y.timestamp||y.date)===(x.timestamp||x.date)&&y.type===x.type&&Math.abs(Number(y.eur)-x.eur)<0.011&&Math.abs(Number(y.btc)-x.btc)<0.00000001);if(duplicate){duplicates++;continue;}existing.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,9),...x});added++;}localStorage.setItem(key,JSON.stringify(existing));el('pfStatus').textContent=added+' BTC-Transaktionen importiert ('+duplicates+' Duplikate übersprungen).';el('pfStatus').className='status';window.dispatchEvent(new CustomEvent('bitcoin-cockpit-portfolio-updated'));importBtn.disabled=true;});
+})();</script>
 
 <script>
 (() => {

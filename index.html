@@ -590,7 +590,7 @@ $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('c
       const type=norm(cell(m.type));
       const fiat=m.fiat<0?'EUR':cell(m.fiat).toUpperCase();
       const buyType=/(buy|purchase|kauf|kaufen|crypto kauf|kauf von)/.test(type);
-      const assetIsBtc=/^(BTC|BITCOIN)$/.test(asset);
+      const assetIsBtc=/BITCOIN|(^|[^A-Z])BTC([^A-Z]|$)/.test(asset);
       const fiatIsEur=/^(EUR|EURO)$/.test(fiat);
       const d=dateValue(cell(m.date)), b=Math.abs(number(cell(m.btc))), e=Math.abs(number(cell(m.eur)));
       if(buyType&&assetIsBtc&&fiatIsEur&&d&&b>0&&e>0) found.push({date:d,eur:e,btc:b});

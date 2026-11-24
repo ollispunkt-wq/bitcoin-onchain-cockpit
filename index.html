@@ -55,17 +55,7 @@
     <div id="pfCsvMap" class="hidden" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px"></div>
     <div id="pfCsvPreview" class="status">Noch keine CSV ausgewählt.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="pfCsvImport" disabled>Erkannte Käufe übernehmen</button></div>
-    <div class="muted" style="margin-top:8px">Es werden ausschließlich eindeutig als Kauf erkannte BTC/EUR-Transaktionen importiert. Verkäufe, andere Coins und unklare Zeilen bleiben außen vor. Gebühren werden nicht zusätzlich geschätzt.</div>
-  </div>
-  <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0">
-    <div class="signal"><div class="name">Aktueller Portfoliowert</div><div class="value" id="pfValue">—</div><div class="detail" id="pfPriceMeta">Noch kein aktueller Kurs</div></div>
-    <div class="signal"><div class="name">Tatsächlich investiert</div><div class="value" id="pfInvested">—</div><div class="detail">Summe der eingetragenen Käufe</div></div>
-    <div class="signal"><div class="name">Gewinn / Verlust</div><div class="value" id="pfPnl">—</div><div class="detail" id="pfPnlPct">Erst nach Kursabruf und Käufen</div></div>
-  </div>
-  <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0">
-    <div class="signal"><div class="name">BTC-Bestand</div><div class="value" id="pfBtc">—</div></div>
-    <div class="signal"><div class="name">Durchschnittlicher Einstand</div><div class="value" id="pfAverage">—</div><div class="detail">EUR je BTC, aus den erfassten Käufen</div></div>
-    <div class="signal"><div class="name">Aktueller BTC/EUR-Kurs</div><div class="value" id="pfSpot">—</div><div class="detail">Live-Kurs, keine historische Schätzung</div></div>
+    <div class="muted" style="margin-top:8px">Es werden ausschließlich BTC-Transaktionen importiert. Käufe und Verkäufe werden getrennt erkannt; andere Coins und unklare Typen bleiben außen vor. Gebühren werden nicht zusätzlich geschätzt.</div>
   </div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin:12px 0">
     <div class="signal"><div class="name">Aktueller Portfoliowert</div><div class="value" id="pfValue">—</div><div class="detail" id="pfPriceMeta">Noch kein aktueller Kurs</div></div>

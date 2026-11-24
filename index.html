@@ -23,6 +23,15 @@
 <div class="section-title" id="portfolio"><h2>Mein Bitcoin-Portfolio</h2><span>Nur echte, selbst erfasste Käufe · lokal gespeichert</span></div>
 <section class="panel" id="portfolioPanel">
   <p class="muted">Trage jeden tatsächlichen Kauf einzeln ein. Benötigt werden der tatsächlich belastete Eurobetrag und die tatsächlich gutgeschriebene BTC-Menge. Es werden keine bisherigen Bestände oder Käufe geschätzt.</p>
+  <div class="signal" style="margin:12px 0">
+    <div class="name">Bitpanda-CSV importieren</div>
+    <p class="muted">Wähle deinen CSV-Export direkt von deinem Gerät. Die Datei wird nur in diesem Browser verarbeitet. Prüfe die erkannte Spaltenzuordnung und Vorschau, bevor du Transaktionen übernimmst.</p>
+    <input id="pfCsvFile" type="file" accept=".csv,text/csv">
+    <div id="pfCsvMap" class="hidden" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px"></div>
+    <div id="pfCsvPreview" class="status">Noch keine CSV ausgewählt.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="pfCsvImport" disabled>Erkannte Käufe übernehmen</button></div>
+    <div class="muted" style="margin-top:8px">Es werden ausschließlich eindeutig als Kauf erkannte BTC/EUR-Transaktionen importiert. Verkäufe, andere Coins und unklare Zeilen bleiben außen vor. Gebühren werden nicht zusätzlich geschätzt.</div>
+  </div>
   <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0">
     <div class="signal"><div class="name">Aktueller Portfoliowert</div><div class="value" id="pfValue">—</div><div class="detail" id="pfPriceMeta">Noch kein aktueller Kurs</div></div>
     <div class="signal"><div class="name">Tatsächlich investiert</div><div class="value" id="pfInvested">—</div><div class="detail">Summe der eingetragenen Käufe</div></div>
@@ -509,6 +518,9 @@ $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('c
     buys=buys.filter(x=>x.id!==btn.dataset.del);save();render();status('Kauf gelöscht.');
   });
   $p('pfRefresh').addEventListener('click',refresh);
+  window.addEventListener('bitcoin-cockpit-portfolio-updated',()=>{
+    try { const stored=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(stored))buys=stored.filter(validBuy); render(); } catch {}
+  });
   $p('pfExport').addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify({format:'bitcoin-cockpit-buys-v1',exportedAt:new Date().toISOString(),buys},null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='bitcoin-kaeufe.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -528,6 +540,104 @@ $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('c
   $p('pfDate').value=new Date().toISOString().slice(0,10);
   render();
   refresh();
+})();
+</script>
+
+<script>
+(() => {
+  const el = id => document.getElementById(id);
+  const fileInput = el('pfCsvFile'), mapBox = el('pfCsvMap'), preview = el('pfCsvPreview'), importBtn = el('pfCsvImport');
+  let rows = [], headers = [], staged = [];
+  const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  function parseCsv(text) {
+    text = text.replace(/^\\uFEFF/,'');
+    const first = text.split(/\\r?\\n/,1)[0] || '';
+    const delim = [',',';','\\t'].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+    const out=[]; let row=[], cell='', quoted=false;
+    for(let i=0;i<text.length;i++){const ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(ch==='"')quoted=false;else cell+=ch;}else if(ch==='"')quoted=true;else if(ch===delim){row.push(cell);cell='';}else if(ch==='\\n'){row.push(cell.replace(/\\r$/,''));if(row.some(x=>x.trim()))out.push(row);row=[];cell='';}else cell+=ch;}
+    row.push(cell.replace(/\\r$/,''));if(row.some(x=>x.trim()))out.push(row);
+    return out;
+  }
+  function number(v) {
+    let s=String(v??'').trim().replace(/[^0-9,.-]/g,'');
+    if(!s) return NaN;
+    if(s.includes(',')&&s.includes('.')) { if(s.lastIndexOf(',')>s.lastIndexOf('.')) s=s.replace(/\\./g,'').replace(',','.'); else s=s.replace(/,/g,''); }
+    else if(s.includes(',')) s=s.replace(',','.');
+    const n=Number(s); return Number.isFinite(n)?n:NaN;
+  }
+  function dateValue(v) {
+    const s=String(v||'').trim();
+    if(/^\\d{4}-\\d{2}-\\d{2}/.test(s)) return s.slice(0,10);
+    const m=s.match(/^(\\d{1,2})[./](\\d{1,2})[./](\\d{4})/);
+    if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+    const d=new Date(s); return Number.isNaN(d.getTime())?'':d.toISOString().slice(0,10);
+  }
+  function guess(aliases) { return headers.findIndex(h=>aliases.some(a=>norm(h)===norm(a)||norm(h).includes(norm(a)))); }
+  function options(id,label,aliases,required=true) {
+    const idx=guess(aliases);
+    return '<label class="field"><span class="muted">'+label+'</span><select id="'+id+'" style="width:100%">'+(required?(idx<0?'<option value="-1" selected disabled>Spalte auswählen</option>':''):'<option value="-1">Nicht zugeordnet</option>')+headers.map((h,i)=>'<option value="'+i+'" '+(i===idx?'selected':'')+'>'+h.replace(/</g,'&lt;')+'</option>').join('')+'</select></label>';
+  }
+  function mapped() {
+    const get=id=>Number(el(id).value);
+    return {date:get('csvDate'),type:get('csvType'),asset:get('csvAsset'),btc:get('csvBtc'),eur:get('csvEur'),fiat:get('csvFiat')};
+  }
+  function buildPreview() {
+    if(!rows.length)return;
+    const m=mapped(), found=[];
+    for(const r of rows) {
+      const cell=i=>i>=0?String(r[i]??'').trim():'';
+      const asset=cell(m.asset).toUpperCase();
+      const type=norm(cell(m.type));
+      const fiat=m.fiat<0?'EUR':cell(m.fiat).toUpperCase();
+      const buyType=/(buy|purchase|kauf|kaufen|crypto kauf|kauf von)/.test(type);
+      const assetIsBtc=/BITCOIN|(^|[^A-Z])BTC([^A-Z]|$)/.test(asset);
+      const fiatIsEur=/^(EUR|EURO)$/.test(fiat);
+      const d=dateValue(cell(m.date)), b=Math.abs(number(cell(m.btc))), e=Math.abs(number(cell(m.eur)));
+      if(buyType&&assetIsBtc&&fiatIsEur&&d&&b>0&&e>0) found.push({date:d,eur:e,btc:b});
+    }
+    staged=found;
+    const sample=found.slice(0,5).map(x=>'<tr><td>'+x.date+'</td><td>'+x.eur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €</td><td>'+x.btc.toLocaleString('de-DE',{maximumFractionDigits:8})+'</td></tr>').join('');
+    preview.innerHTML=found.length
+      ? '<b>'+found.length+' mögliche BTC-Käufe erkannt.</b><div class="muted">Vorschau der ersten '+Math.min(found.length,5)+' Einträge:</div><div class="table-wrap"><table><thead><tr><th>Datum</th><th>EUR</th><th>BTC</th></tr></thead><tbody>'+sample+'</tbody></table></div>'
+      : 'Keine eindeutigen BTC-Käufe erkannt. Prüfe die Spaltenzuordnung. Verkäufe und unklare Transaktionen werden nicht importiert.';
+    importBtn.disabled=!found.length;
+  }
+  fileInput.addEventListener('change',async()=>{
+    const file=fileInput.files?.[0]; if(!file)return;
+    try {
+      const matrix=parseCsv(await file.text());
+      if(matrix.length<2)throw new Error('Die CSV enthält keine erkennbaren Datenzeilen.');
+      let headAt=matrix.findIndex(r=>r.some(x=>/date|datum|timestamp/i.test(x))&&r.length>=3);
+      if(headAt<0)headAt=0;
+      headers=matrix[headAt].map((h,i)=>String(h||'Spalte '+(i+1)).trim());
+      rows=matrix.slice(headAt+1).filter(r=>r.length>1);
+      mapBox.innerHTML=options('csvDate','Datum',['Timestamp','Date','Datum','Time','Created at'])+
+        options('csvType','Transaktionstyp',['Transaction Type','Type','Typ','Transaction','Aktion'])+
+        options('csvAsset','Coin / Asset',['Asset','Currency','Coin','Cryptocurrency'])+
+        options('csvBtc','BTC-Menge',['Amount Asset','Asset Amount','Amount','Quantity','Menge'])+
+        options('csvEur','Eurobetrag',['Fiat Amount','Amount Fiat','EUR Amount','Total','Fiat Value','Wert'])+
+        options('csvFiat','Fiat-Währung',['Fiat Currency','Currency Fiat','Fiat'],false);
+      mapBox.classList.remove('hidden');
+      ['csvDate','csvType','csvAsset','csvBtc','csvEur','csvFiat'].forEach(id=>el(id).addEventListener('change',buildPreview));
+      buildPreview();
+    } catch(err) { rows=[];staged=[];mapBox.classList.add('hidden');preview.textContent='CSV konnte nicht gelesen werden: '+err.message;importBtn.disabled=true; }
+  });
+  importBtn.addEventListener('click',()=>{
+    if(!staged.length)return;
+    const existing=JSON.parse(localStorage.getItem('bitcoin_cockpit_real_buys_v1')||'[]');
+    let added=0, duplicates=0;
+    for(const x of staged) {
+      const duplicate=existing.some(y=>y.date===x.date&&Math.abs(Number(y.eur)-x.eur)<0.011&&Math.abs(Number(y.btc)-x.btc)<0.00000001);
+      if(duplicate){duplicates++;continue;}
+      existing.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,9),...x});added++;
+    }
+    localStorage.setItem('bitcoin_cockpit_real_buys_v1',JSON.stringify(existing));
+    el('pfStatus').textContent=added+' Käufe importiert, '+duplicates+' bereits vorhandene Einträge übersprungen. Bitte Portfolio prüfen.';
+    el('pfStatus').className='status';
+    // Notify the portfolio module to reload persisted entries.
+    window.dispatchEvent(new CustomEvent('bitcoin-cockpit-portfolio-updated'));
+    importBtn.disabled=true;
+  });
 })();
 </script>
 </body></html>

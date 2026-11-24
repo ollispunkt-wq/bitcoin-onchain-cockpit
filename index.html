@@ -575,7 +575,7 @@ $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('c
   function guess(aliases) { return headers.findIndex(h=>aliases.some(a=>norm(h)===norm(a)||norm(h).includes(norm(a)))); }
   function options(id,label,aliases,required=true) {
     const idx=guess(aliases);
-    return '<label class="field"><span class="muted">'+label+'</span><select id="'+id+'" style="width:100%">'+(required?'':'<option value="-1">Nicht zugeordnet</option>')+headers.map((h,i)=>'<option value="'+i+'" '+(i===idx?'selected':'')+'>'+h.replace(/</g,'&lt;')+'</option>').join('')+'</select></label>';
+    return '<label class="field"><span class="muted">'+label+'</span><select id="'+id+'" style="width:100%">'+(required?(idx<0?'<option value="-1" selected disabled>Spalte auswählen</option>':''):'<option value="-1">Nicht zugeordnet</option>')+headers.map((h,i)=>'<option value="'+i+'" '+(i===idx?'selected':'')+'>'+h.replace(/</g,'&lt;')+'</option>').join('')+'</select></label>';
   }
   function mapped() {
     const get=id=>Number(el(id).value);

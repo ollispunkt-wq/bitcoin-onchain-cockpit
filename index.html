@@ -19,6 +19,40 @@
 <div class="section-title"><h2>Indikatoren</h2><span>Glättung gemäß Modellbasis</span></div><div class="chart-grid" id="indicatorCharts"></div>
 <div class="section-title" id="backtest"><h2>Historischer Signal-Backtest</h2><span>Renditen ab bestätigtem Wochenschluss</span></div><section class="panel"><div class="field" style="max-width:260px"><label for="backtestGroup">Signalbereich</label><select id="backtestGroup"><option value="bewertung">Bewertung</option><option value="phase">Marktphase</option><option value="timing">Timing</option></select></div><div class="table-wrap"><table id="backtestTable"><thead><tr><th>Horizont</th><th>Signal</th><th>Wochen</th><th>Median Rendite</th><th>Trefferquote</th><th>Median Max. Verlust</th></tr></thead><tbody><tr><td colspan="6" class="muted">Nach dem Datenabruf verfügbar.</td></tr></tbody></table></div><p class="muted">Überlappende Vorwärtsfenster sind nicht unabhängig. Ergebnisse sind historische Beobachtungen, keine erwartbaren Renditen.</p></section>
 <div class="section-title"><h2>Sparplan-Vergleich</h2><span>Gleiche monatliche Einzahlung · keine Gebühren/Steuern</span></div><section class="panel"><div class="controls"><div class="field"><label for="monthly">Monatsrate in USD</label><input id="monthly" type="number" min="1" step="10" value="100"></div><div class="field"><label for="dcaStart">Startdatum</label><input id="dcaStart" type="date" value="2017-01-01"></div><div class="field"><button class="secondary" id="dcaBtn" disabled>Vergleich berechnen</button></div></div><div id="dcaResult" class="status">Wird nach dem Datenabruf berechnet.</div><div id="chart-dca" class="chart"></div></section>
+
+<div class="section-title" id="portfolio"><h2>Mein Bitcoin-Portfolio</h2><span>Transaktionen lokal in diesem Browser gespeichert</span></div>
+<section class="panel">
+  <p class="muted">Erfasse Käufe mit dem tatsächlich erhaltenen BTC-Betrag. Der aktuelle BTC/EUR-Kurs wird zunächst manuell eingetragen. Ohne vollständige Kaufhistorie sind Durchschnittskaufpreis und Gewinn/Verlust nicht belastbar.</p>
+  <div class="grid" id="portfolioSummary">
+    <article class="signal"><div class="name">Investiert (netto)</div><div class="value" id="pfInvested">—</div><div class="detail">Käufe abzüglich Verkaufserlöse</div></article>
+    <article class="signal"><div class="name">Bitcoin-Bestand</div><div class="value" id="pfBtc">—</div><div class="detail">Nach erfassten Käufen und Verkäufen</div></article>
+    <article class="signal"><div class="name">Durchschnittlicher Einstand</div><div class="value" id="pfAverage">—</div><div class="detail">EUR je BTC · Gebühren berücksichtigt</div></article>
+  </div>
+  <div class="grid">
+    <article class="signal"><div class="name">Aktueller Wert</div><div class="value" id="pfValue">—</div><div class="detail" id="pfPriceHint">BTC/EUR-Kurs erforderlich</div></article>
+    <article class="signal"><div class="name">Nicht realisiert</div><div class="value" id="pfUnrealized">—</div><div class="detail">Wert des aktuellen Bestands minus Einstand</div></article>
+    <article class="signal"><div class="name">Realisiert</div><div class="value" id="pfRealized">—</div><div class="detail">Verkäufe nach FIFO-Verfahren</div></article>
+  </div>
+  <div class="controls" style="margin-top:14px">
+    <div class="field"><label for="pfPrice">Aktueller BTC-Kurs in EUR</label><input id="pfPrice" type="number" min="0" step="0.01" placeholder="z. B. 80000"></div>
+    <div class="field"><label for="pfDate">Kursstand (Datum)</label><input id="pfDate" type="date"></div>
+    <div class="field"><button class="secondary" id="pfRecalc">Portfolio aktualisieren</button></div>
+  </div>
+  <div class="section-title"><h2>Transaktion erfassen</h2><span>Käufe und Verkäufe einzeln dokumentieren</span></div>
+  <div class="controls">
+    <div class="field"><label for="pfType">Art</label><select id="pfType"><option value="buy">Kauf</option><option value="sell">Verkauf</option></select></div>
+    <div class="field"><label for="pfTxDate">Datum</label><input id="pfTxDate" type="date"></div>
+    <div class="field"><label for="pfEur">Eurobetrag</label><input id="pfEur" type="number" min="0.01" step="0.01" placeholder="z. B. 100"></div>
+  </div>
+  <div class="controls" style="margin-top:10px">
+    <div class="field"><label for="pfAmount">BTC tatsächlich erhalten / verkauft</label><input id="pfAmount" type="number" min="0.00000001" step="0.00000001" placeholder="z. B. 0,00125"></div>
+    <div class="field"><label for="pfFee">Gebühren in EUR</label><input id="pfFee" type="number" min="0" step="0.01" value="0"></div>
+    <div class="field"><button id="pfAdd">Transaktion speichern</button></div>
+  </div>
+  <div id="pfMessage" class="status">Noch keine Transaktionen erfasst.</div>
+  <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Datum</th><th>Art</th><th>EUR</th><th>BTC</th><th>Gebühr</th><th></th></tr></thead><tbody id="pfRows"><tr><td colspan="6" class="muted">Noch keine Transaktionen.</td></tr></tbody></table></div>
+  <p class="muted">Die Daten bleiben in diesem Browser auf diesem Gerät gespeichert. Browserdaten löschen oder ein Gerätewechsel kann sie entfernen. Export/Import wird als nächster Schritt ergänzt. Steuerliche Gewinnermittlung kann abweichen; FIFO dient hier der Portfolioübersicht.</p>
+</section>
 </main><footer>Datenquelle: Kote Charts · nicht-kommerzielle Nutzung mit Quellenangabe · <a href="https://kotecharts.com/methodology" target="_blank" rel="noopener">Methodik</a> · <a href="https://kotecharts.com/docs" target="_blank" rel="noopener">API-Dokumentation</a></footer>
 <script>
 /*! https://github.com/leeoniya/uPlot (v1.6.32) */
@@ -421,4 +455,80 @@ function renderBacktest(){const g=$('backtestGroup').value;const bt=backtestSign
 function renderDca(){if(dcaChart){dcaChart.destroy();dcaChart=null}const monthly=Math.max(1,Number($('monthly').value)||100),start=$('dcaStart').value||'2017-01-01';const r=backtestDca(DATA,ANALYSIS,start,monthly,'bewertung');const money=x=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(x);$('dcaResult').textContent=`Einzahlungen ${money(r.plain.deposited)} · Standard-Sparplan ${money(r.plain.value)} (${r.plain.multiple.toFixed(2)}×) · Ampel-Sparplan ${money(r.signal.value)} (${r.signal.multiple.toFixed(2)}×) · Cashreserve ${money(r.signal.cash)} · ausgelassene Monate ${r.skippedMonths} · Monate ohne Signal ${r.unknownMonths}.`;const el=$('chart-dca');el.innerHTML='';if(r.curve.t.length){const opts={width:el.clientWidth||600,height:230,scales:{x:{time:true}},axes:[{stroke:'#9aabc0',grid:{stroke:'#26364a'}},{stroke:'#9aabc0',grid:{stroke:'#26364a'}}],series:[{}, {label:'Standard',stroke:'#60a5fa',width:2},{label:'Ampel',stroke:'#35c995',width:2},{label:'Einzahlungen',stroke:'#f4a340',width:1,dash:[5,4]}],legend:{show:true}};dcaChart=new uPlot(opts,[r.curve.t,r.curve.plain,r.curve.sig,r.curve.deposited],el)}}
 function render(){renderSignals();renderCharts();renderBacktest();renderDca()}
 $('loadBtn').addEventListener('click',load);$('rangeSelect').addEventListener('change',()=>{if(DATA)renderCharts()});$('backtestGroup').addEventListener('change',()=>{if(DATA)renderBacktest()});$('dcaBtn').addEventListener('click',()=>{if(DATA)renderDca()});$('apiKey').value=localStorage.getItem('kote_chart_api_key')||'';window.addEventListener('resize',()=>{if(DATA){renderCharts();renderDca()}});
-</script></body></html>
+</script>
+<script>
+(function(){
+  'use strict';
+  const $p = id => document.getElementById(id);
+  const STORE = 'btc_portfolio_transactions_v1';
+  const PRICE_STORE = 'btc_portfolio_price_eur_v1';
+  let txs = [];
+  try { txs = JSON.parse(localStorage.getItem(STORE) || '[]'); if (!Array.isArray(txs)) txs = []; } catch (_) { txs = []; }
+  const euro = n => new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number.isFinite(n)?n:0);
+  const btcFmt = n => new Intl.NumberFormat('de-DE',{maximumFractionDigits:8}).format(n);
+  const num = id => Number($p(id).value);
+  function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function save(){localStorage.setItem(STORE,JSON.stringify(txs));}
+  function render(){
+    txs.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+    const lots=[]; let realized=0, totalBuy=0, totalSell=0;
+    for(const t of txs){
+      if(t.type==='buy'){
+        const cost=t.eur+t.fee; totalBuy+=cost;
+        lots.push({qty:t.btc,cost:cost});
+      } else {
+        totalSell+=t.eur;
+        let remaining=t.btc, costOut=0;
+        while(remaining>1e-12 && lots.length){
+          const lot=lots[0], take=Math.min(remaining,lot.qty);
+          const part=lot.cost*(take/lot.qty);
+          costOut+=part; lot.qty-=take; lot.cost-=part; remaining-=take;
+          if(lot.qty<1e-12)lots.shift();
+        }
+        if(remaining>1e-9){realized=null; }
+        else if(realized!==null)realized+=t.eur-t.fee-costOut;
+      }
+    }
+    const qty=lots.reduce((s,l)=>s+l.qty,0);
+    const remainingCost=lots.reduce((s,l)=>s+l.cost,0);
+    const price=Number($p('pfPrice').value);
+    const validPrice=Number.isFinite(price)&&price>0;
+    const value=validPrice?qty*price:null;
+    const unrealized=validPrice?value-remainingCost:null;
+    const invested=totalBuy-totalSell;
+    $p('pfInvested').textContent=euro(invested);
+    $p('pfBtc').textContent=btcFmt(qty)+' BTC';
+    $p('pfAverage').textContent=qty>0?euro(remainingCost/qty)+'/BTC':'—';
+    $p('pfValue').textContent=value===null?'—':euro(value);
+    $p('pfPriceHint').textContent=validPrice?'Kurs: '+euro(price)+' · Stand '+($p('pfDate').value||'nicht angegeben'):'BTC/EUR-Kurs erforderlich';
+    $p('pfUnrealized').textContent=unrealized===null?'—':euro(unrealized);
+    $p('pfRealized').textContent=realized===null?'Nicht berechenbar – Verkäufe übersteigen erfasste Käufe':euro(realized);
+    $p('pfUnrealized').style.color=unrealized===null?'':(unrealized>=0?'var(--green)':'var(--red)');
+    $p('pfRealized').style.color=realized===null?'':(realized>=0?'var(--green)':'var(--red)');
+    $p('pfRows').innerHTML=txs.length?txs.map(t=>'<tr><td>'+esc(t.date)+'</td><td>'+(t.type==='buy'?'Kauf':'Verkauf')+'</td><td>'+euro(t.eur)+'</td><td>'+btcFmt(t.btc)+'</td><td>'+euro(t.fee)+'</td><td><button type="button" class="secondary pfDelete" data-id="'+esc(t.id)+'" style="min-height:28px;padding:3px 8px">Löschen</button></td></tr>').join(''):'<tr><td colspan="6" class="muted">Noch keine Transaktionen.</td></tr>';
+    $p('pfMessage').textContent=txs.length+' Transaktion(en) gespeichert · '+(realized===null?'Verkaufshistorie unvollständig.':'FIFO-Berechnung durchgeführt.');
+    document.querySelectorAll('.pfDelete').forEach(b=>b.addEventListener('click',()=>{txs=txs.filter(t=>t.id!==b.dataset.id);save();render();}));
+  }
+  const savedPrice=localStorage.getItem(PRICE_STORE);
+  if(savedPrice){try{const p=JSON.parse(savedPrice);$p('pfPrice').value=p.price||'';$p('pfDate').value=p.date||'';}catch(_){}}
+  const today=new Date().toISOString().slice(0,10);
+  $p('pfTxDate').value=today;
+  $p('pfDate').value=$p('pfDate').value||today;
+  $p('pfAdd').addEventListener('click',()=>{
+    const type=$p('pfType').value,date=$p('pfTxDate').value,eur=num('pfEur'),btc=num('pfAmount'),fee=num('pfFee');
+    if(!date||!Number.isFinite(eur)||eur<=0||!Number.isFinite(btc)||btc<=0||!Number.isFinite(fee)||fee<0){$p('pfMessage').textContent='Bitte Datum, positiven Eurobetrag und BTC-Menge sowie gültige Gebühren eintragen.';return;}
+    const held=txs.filter(t=>t.type==='buy').reduce((s,t)=>s+t.btc,0)-txs.filter(t=>t.type==='sell').reduce((s,t)=>s+t.btc,0);
+    if(type==='sell'&&btc>held+1e-10){$p('pfMessage').textContent='Verkauf größer als der bisher erfasste BTC-Bestand. Bitte zuerst fehlende Käufe ergänzen.';return;}
+    txs.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),type,date,eur,btc,fee});
+    save();$p('pfEur').value='';$p('pfAmount').value='';$p('pfFee').value='0';render();
+  });
+  $p('pfRecalc').addEventListener('click',()=>{
+    const price=num('pfPrice');
+    if(!Number.isFinite(price)||price<=0){$p('pfMessage').textContent='Bitte einen gültigen BTC/EUR-Kurs eingeben.';return;}
+    localStorage.setItem(PRICE_STORE,JSON.stringify({price,date:$p('pfDate').value}));render();
+  });
+  $p('pfPrice').addEventListener('change',()=>{if(num('pfPrice')>0){localStorage.setItem(PRICE_STORE,JSON.stringify({price:num('pfPrice'),date:$p('pfDate').value}));render();}});
+  render();
+})();
+</script>
+</body></html>
